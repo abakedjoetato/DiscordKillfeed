@@ -5,6 +5,7 @@ Emerald's Killfeed - Premium Management System (PHASE 9)
 Premium is assigned per server, not user
 """
 
+import os
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Any
@@ -24,7 +25,7 @@ class Premium(commands.Cog):
     
     def __init__(self, bot):
         self.bot = bot
-        self.bot_owner_id = int(os.getenv('BOT_OWNER_ID', 0)) if 'os' in globals() else 0
+        self.bot_owner_id = int(os.getenv('BOT_OWNER_ID', 0))
         
     def is_bot_owner(self, user_id: int) -> bool:
         """Check if user is the bot owner"""
@@ -425,30 +426,14 @@ class Premium(commands.Cog):
     
     @server.command(name="remove", description="Remove a game server from this guild")
     @commands.has_permissions(administrator=True)
-    async def get_server_names(self, ctx: discord.AutocompleteContext):
-        """Get server names for autocomplete"""
-        try:
-            guild_id = ctx.interaction.guild.id
-            guild_config = await self.bot.db_manager.get_guild(guild_id)
-            
-            if not guild_config:
-                return []
-            
-            servers = guild_config.get('servers', [])
-            server_names = [server.get('server_name', '') for server in servers if server.get('server_name')]
-            
-            # Filter based on current input
-            current_input = ctx.value.lower()
-            matching_names = [name for name in server_names if current_input in name.lower()]
-            
-            return matching_names[:25]  # Discord limits to 25 options
-        except Exception:
-            return []
-
     async def server_remove(self, ctx: discord.ApplicationContext, 
-                           server_name: discord.Option(str, description="Server name to remove", autocomplete=get_server_names)):
+                           server_name: str):
         """Remove a game server from the guild"""
         try:
+            if not ctx.guild:
+                await ctx.respond("❌ This command can only be used in a server!", ephemeral=True)
+                return
+                
             guild_id = ctx.guild.id
             server_name = server_name.strip()
             
@@ -487,7 +472,15 @@ class Premium(commands.Cog):
                 # Also clear all PvP data for this server
                 server_id = server_to_remove.get('server_id')
                 if server_id:
-                    await self.bot.db_manager.clear_server_pvp_data(guild_id, server_id)
+                    # Clear PvP data directly from the collections
+                    await self.bot.db_manager.pvp_events.delete_many({
+                        "guild_id": guild_id,
+                        "server_id": server_id
+                    })
+                    await self.bot.db_manager.player_stats.delete_many({
+                        "guild_id": guild_id,
+                        "server_id": server_id
+                    })
                 
                 embed = discord.Embed(
                     title="🗑️ Server Removed",
