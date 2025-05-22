@@ -423,6 +423,80 @@ class Premium(commands.Cog):
             logger.error(f"Failed to add server: {e}")
             await ctx.respond("❌ Failed to add server.", ephemeral=True)
     
+    @server.command(name="remove", description="Remove a game server from this guild")
+    @commands.has_permissions(administrator=True)
+    async def server_remove(self, ctx: discord.ApplicationContext, serverid: str):
+        """Remove a game server from the guild"""
+        try:
+            guild_id = ctx.guild.id
+            serverid = serverid.strip()
+            
+            if not serverid:
+                await ctx.respond("❌ Server ID cannot be empty!", ephemeral=True)
+                return
+            
+            # Get guild configuration
+            guild_config = await self.bot.db_manager.get_guild(guild_id)
+            if not guild_config:
+                await ctx.respond("❌ No servers configured for this guild!", ephemeral=True)
+                return
+            
+            # Find the server to remove
+            servers = guild_config.get('servers', [])
+            server_to_remove = None
+            updated_servers = []
+            
+            for server in servers:
+                if server.get('server_id') == serverid:
+                    server_to_remove = server
+                else:
+                    updated_servers.append(server)
+            
+            if not server_to_remove:
+                await ctx.respond(f"❌ Server **{serverid}** not found!", ephemeral=True)
+                return
+            
+            # Update guild with remaining servers
+            success = await self.bot.db_manager.update_guild_servers(guild_id, updated_servers)
+            
+            if success:
+                # Also clear all PvP data for this server
+                await self.bot.db_manager.clear_server_pvp_data(guild_id, serverid)
+                
+                embed = discord.Embed(
+                    title="🗑️ Server Removed",
+                    description=f"Game server **{server_to_remove.get('server_name', serverid)}** has been removed!",
+                    color=0xFF6B6B,
+                    timestamp=datetime.now(timezone.utc)
+                )
+                
+                embed.add_field(
+                    name="🆔 Removed Server ID",
+                    value=serverid,
+                    inline=True
+                )
+                
+                embed.add_field(
+                    name="👤 Removed by",
+                    value=ctx.user.mention,
+                    inline=True
+                )
+                
+                embed.add_field(
+                    name="🧹 Data Cleanup",
+                    value="All PvP data for this server has been cleared",
+                    inline=False
+                )
+                
+                embed.set_footer(text="Powered by Discord.gg/EmeraldServers")
+                await ctx.respond(embed=embed)
+            else:
+                await ctx.respond("❌ Failed to remove server.", ephemeral=True)
+                
+        except Exception as e:
+            logger.error(f"Failed to remove server: {e}")
+            await ctx.respond("❌ Failed to remove server.", ephemeral=True)
+    
     @server.command(name="list", description="List all game servers for this guild")
     async def server_list(self, ctx: discord.ApplicationContext):
         """List all game servers configured for the guild"""
