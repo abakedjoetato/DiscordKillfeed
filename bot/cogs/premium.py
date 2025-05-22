@@ -317,18 +317,27 @@ class Premium(commands.Cog):
     
     server = discord.SlashCommandGroup("server", "Game server management commands")
     
-    @server.command(name="add", description="Add a game server to this guild")
+    @server.command(name="add", description="Add a game server with SFTP credentials to this guild")
     @commands.has_permissions(administrator=True)
     async def server_add(self, ctx: discord.ApplicationContext, 
-                        server_id: str, server_name: str = None):
-        """Add a game server to the guild"""
+                        name: str, host: str, port: int, username: str, password: str, serverid: str):
+        """Add a game server with full SFTP credentials to the guild"""
         try:
             guild_id = ctx.guild.id
             
-            # Validate server ID
-            server_id = server_id.strip()
-            if not server_id:
-                await ctx.respond("❌ Server ID cannot be empty!", ephemeral=True)
+            # Validate inputs
+            serverid = serverid.strip()
+            name = name.strip()
+            host = host.strip()
+            username = username.strip()
+            password = password.strip()
+            
+            if not all([serverid, name, host, username, password]):
+                await ctx.respond("❌ All fields are required: name, host, port, username, password, serverid", ephemeral=True)
+                return
+            
+            if not (1 <= port <= 65535):
+                await ctx.respond("❌ Port must be between 1 and 65535", ephemeral=True)
                 return
             
             # Get or create guild
@@ -339,14 +348,18 @@ class Premium(commands.Cog):
             # Check if server already exists
             existing_servers = guild_config.get('servers', [])
             for server in existing_servers:
-                if server.get('server_id') == server_id:
-                    await ctx.respond(f"❌ Server **{server_id}** is already added!", ephemeral=True)
+                if server.get('server_id') == serverid:
+                    await ctx.respond(f"❌ Server **{serverid}** is already added!", ephemeral=True)
                     return
             
-            # Create server config
+            # Create server config with full SFTP credentials
             server_config = {
-                'server_id': server_id,
-                'server_name': server_name or server_id,
+                'server_id': serverid,
+                'server_name': name,
+                'sftp_host': host,
+                'sftp_port': port,
+                'sftp_username': username,
+                'sftp_password': password,
                 'added_at': datetime.now(timezone.utc),
                 'added_by': ctx.user.id
             }
@@ -364,7 +377,13 @@ class Premium(commands.Cog):
                 
                 embed.add_field(
                     name="🆔 Server ID",
-                    value=server_id,
+                    value=serverid,
+                    inline=True
+                )
+                
+                embed.add_field(
+                    name="🌐 SFTP Host",
+                    value=f"{host}:{port}",
                     inline=True
                 )
                 
