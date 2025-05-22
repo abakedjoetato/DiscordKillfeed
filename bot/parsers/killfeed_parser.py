@@ -82,16 +82,16 @@ class KillfeedParser:
             return None
     
     async def get_sftp_csv_files(self, server_config: Dict[str, Any]) -> List[str]:
-        """Get CSV files from SFTP server"""
+        """Get CSV files from SFTP server using server-specific credentials"""
         try:
-            # SFTP configuration
-            sftp_host = os.getenv('SFTP_HOST', server_config.get('sftp_host'))
-            sftp_port = int(os.getenv('SFTP_PORT', server_config.get('sftp_port', 22)))
-            sftp_username = os.getenv('SFTP_USERNAME', server_config.get('sftp_username'))
-            sftp_password = os.getenv('SFTP_PASSWORD', server_config.get('sftp_password'))
+            # Use server-specific SFTP credentials (no more global env fallbacks)
+            sftp_host = server_config.get('sftp_host')
+            sftp_port = server_config.get('sftp_port', 22)
+            sftp_username = server_config.get('sftp_username')
+            sftp_password = server_config.get('sftp_password')
             
             if not all([sftp_host, sftp_username, sftp_password]):
-                logger.warning("SFTP credentials not configured, using dev mode")
+                logger.warning(f"SFTP credentials not configured for server {server_config.get('server_id', 'unknown')}")
                 return []
             
             # Connect to SFTP
