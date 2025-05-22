@@ -115,7 +115,8 @@ class EmeraldKillfeedBot(commands.Bot):
                 'bot.cogs.bounties',
                 'bot.cogs.factions',
                 'bot.cogs.premium',
-                'bot.cogs.leaderboards'
+                'bot.cogs.leaderboards',
+                'bot.cogs.embed_test'
             ]
             
             loaded_cogs = []
