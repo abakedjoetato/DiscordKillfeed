@@ -71,10 +71,7 @@ class Bounties(commands.Cog):
         except Exception as e:
             logger.error(f"Failed to add wallet event: {e}")
     
-    @commands.slash_command(name="bounty", description="Bounty system commands")
-    async def bounty(self, ctx: discord.ApplicationContext):
-        """Base bounty command"""
-        pass
+    bounty = discord.SlashCommandGroup("bounty", "Bounty system commands")
     
     @bounty.command(name="set", description="Set a bounty on a player")
     async def bounty_set(self, ctx: discord.ApplicationContext, target: str, amount: int):

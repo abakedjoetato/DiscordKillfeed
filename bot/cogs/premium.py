@@ -89,10 +89,7 @@ class Premium(commands.Cog):
             logger.error(f"Failed to set home server: {e}")
             await ctx.respond("❌ Failed to set home server.", ephemeral=True)
     
-    @commands.slash_command(name="premium", description="Premium management commands")
-    async def premium(self, ctx: discord.ApplicationContext):
-        """Base premium command"""
-        pass
+    premium = discord.SlashCommandGroup("premium", "Premium management commands")
     
     @premium.command(name="assign", description="Assign premium to a server")
     @commands.has_permissions(administrator=True)
@@ -318,10 +315,7 @@ class Premium(commands.Cog):
             logger.error(f"Failed to check premium status: {e}")
             await ctx.respond("❌ Failed to check premium status.", ephemeral=True)
     
-    @commands.slash_command(name="server", description="Game server management commands")
-    async def server(self, ctx: discord.ApplicationContext):
-        """Base server command"""
-        pass
+    server = discord.SlashCommandGroup("server", "Game server management commands")
     
     @server.command(name="add", description="Add a game server to this guild")
     @commands.has_permissions(administrator=True)

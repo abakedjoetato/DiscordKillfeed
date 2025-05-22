@@ -91,10 +91,7 @@ class Linking(commands.Cog):
             logger.error(f"Failed to link character: {e}")
             await ctx.respond("❌ Failed to link character.", ephemeral=True)
     
-    @commands.slash_command(name="alt", description="Manage alternate characters")
-    async def alt(self, ctx: discord.ApplicationContext):
-        """Base alt command"""
-        pass
+    alt = discord.SlashCommandGroup("alt", "Manage alternate characters")
     
     @alt.command(name="add", description="Add an alternate character")
     async def alt_add(self, ctx: discord.ApplicationContext, character: str):

@@ -90,10 +90,7 @@ class Factions(commands.Cog):
             logger.error(f"Failed to calculate faction stats: {e}")
             return combined_stats
     
-    @commands.slash_command(name="faction", description="Faction management commands")
-    async def faction(self, ctx: discord.ApplicationContext):
-        """Base faction command"""
-        pass
+    faction = discord.SlashCommandGroup("faction", "Faction management commands")
     
     @faction.command(name="create", description="Create a new faction")
     async def faction_create(self, ctx: discord.ApplicationContext, name: str, tag: str = None):

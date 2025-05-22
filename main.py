@@ -72,24 +72,35 @@ class EmeraldKillfeedBot(commands.Bot):
     
     async def setup_hook(self):
         """Setup hook called when bot is starting"""
-        logger.info("Setting up bot...")
+        logger.info("🚀 Setting up bot...")
         
-        # Connect to MongoDB
-        await self.setup_database()
-        
-        # Start scheduler
-        self.setup_scheduler()
-        
-        # Schedule parsers (PHASE 2)
-        if self.killfeed_parser:
-            self.killfeed_parser.schedule_killfeed_parser()
-        if self.log_parser:
-            self.log_parser.schedule_log_parser()
-        
-        # Load cogs
-        await self.load_cogs()
-        
-        logger.info("Bot setup completed")
+        try:
+            # Connect to MongoDB
+            db_success = await self.setup_database()
+            logger.info(f"📊 Database setup: {'✅ Success' if db_success else '❌ Failed'}")
+            
+            # Start scheduler
+            scheduler_success = self.setup_scheduler()
+            logger.info(f"⏰ Scheduler setup: {'✅ Success' if scheduler_success else '❌ Failed'}")
+            
+            # Schedule parsers (PHASE 2)
+            if self.killfeed_parser:
+                self.killfeed_parser.schedule_killfeed_parser()
+                logger.info("📡 Killfeed parser scheduled")
+            if self.log_parser:
+                self.log_parser.schedule_log_parser()
+                logger.info("📜 Log parser scheduled")
+            
+            # Load cogs - CRITICAL FOR SLASH COMMANDS
+            logger.info("🔧 Starting cog loading process...")
+            cogs_success = await self.load_cogs()
+            logger.info(f"🎯 Cog loading: {'✅ Complete' if cogs_success else '❌ Failed'}")
+            
+            logger.info("✅ Bot setup completed successfully!")
+            
+        except Exception as e:
+            logger.error(f"❌ Critical error in setup_hook: {e}")
+            raise
     
     async def load_cogs(self):
         """Load all bot cogs"""
@@ -180,25 +191,58 @@ class EmeraldKillfeedBot(commands.Bot):
     
     async def on_ready(self):
         """Called when bot is ready and connected to Discord"""
-        if self.user:
-            logger.info("Bot is ready! Logged in as %s (ID: %s)", self.user.name, self.user.id)
-        logger.info("Connected to %d guilds", len(self.guilds))
+        # Only run setup once
+        if hasattr(self, '_setup_complete'):
+            return
         
-        # Py-cord automatically syncs slash commands from cogs
-        logger.info("Slash commands loaded from cogs and available in Discord")
+        logger.info("🚀 Bot is ready! Starting setup process...")
         
-        # Verify assets exist
-        if self.assets_path.exists():
-            assets = list(self.assets_path.glob('*.png'))
-            logger.info("Found %d asset files", len(assets))
-        else:
-            logger.warning("Assets directory not found")
-        
-        # Verify dev data exists (for testing)
-        if self.dev_mode:
-            csv_files = list(self.dev_data_path.glob('csv/*.csv'))
-            log_files = list(self.dev_data_path.glob('logs/*.log'))
-            logger.info("Dev mode: Found %d CSV files and %d log files", len(csv_files), len(log_files))
+        try:
+            # Connect to MongoDB
+            db_success = await self.setup_database()
+            logger.info(f"📊 Database setup: {'✅ Success' if db_success else '❌ Failed'}")
+            
+            # Start scheduler
+            scheduler_success = self.setup_scheduler()
+            logger.info(f"⏰ Scheduler setup: {'✅ Success' if scheduler_success else '❌ Failed'}")
+            
+            # Schedule parsers (PHASE 2)
+            if self.killfeed_parser:
+                self.killfeed_parser.schedule_killfeed_parser()
+                logger.info("📡 Killfeed parser scheduled")
+            if self.log_parser:
+                self.log_parser.schedule_log_parser()
+                logger.info("📜 Log parser scheduled")
+            
+            # Load cogs - CRITICAL FOR SLASH COMMANDS
+            logger.info("🔧 Starting cog loading process...")
+            cogs_success = await self.load_cogs()
+            logger.info(f"🎯 Cog loading: {'✅ Complete' if cogs_success else '❌ Failed'}")
+            
+            # Bot ready messages
+            if self.user:
+                logger.info("✅ Bot logged in as %s (ID: %s)", self.user.name, self.user.id)
+            logger.info("✅ Connected to %d guilds", len(self.guilds))
+            
+            # Verify assets exist
+            if self.assets_path.exists():
+                assets = list(self.assets_path.glob('*.png'))
+                logger.info("📁 Found %d asset files", len(assets))
+            else:
+                logger.warning("⚠️ Assets directory not found")
+            
+            # Verify dev data exists (for testing)
+            if self.dev_mode:
+                csv_files = list(self.dev_data_path.glob('csv/*.csv'))
+                log_files = list(self.dev_data_path.glob('logs/*.log'))
+                logger.info("🧪 Dev mode: Found %d CSV files and %d log files", len(csv_files), len(log_files))
+            
+            logger.info("🎉 Bot setup completed successfully!")
+            self._setup_complete = True
+            
+        except Exception as e:
+            logger.error(f"❌ Critical error in bot setup: {e}")
+            raise
     
     async def on_guild_join(self, guild):
         """Called when bot joins a new guild"""
