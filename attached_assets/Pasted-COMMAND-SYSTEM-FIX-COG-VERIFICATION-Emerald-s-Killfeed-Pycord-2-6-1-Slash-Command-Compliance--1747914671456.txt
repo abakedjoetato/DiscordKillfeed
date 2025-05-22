@@ -1,0 +1,157 @@
+COMMAND SYSTEM FIX + COG VERIFICATION
+
+Emerald’s Killfeed | Pycord 2.6.1 | Slash Command Compliance + Loader Validation
+
+
+---
+
+PHASE 0 — CLEAN PROJECT BOOTSTRAP
+
+1. Unzip any .zip in attached_assets
+
+Extract into a temporary folder
+
+Move all contents to the root directory
+
+Flatten any nested structures (e.g., /DeadsideBot/, /Ekfv5/)
+
+
+
+2. Install all required dependencies
+
+py-cord==2.6.1
+
+motor, paramiko, aiofiles, apscheduler, python-dotenv
+
+
+
+3. Load .env file
+
+Ensure BOT_TOKEN and MONGO_URI are set
+
+
+
+4. Start the bot and confirm boot
+
+Validate connection to Discord
+
+Ensure MongoDB is reachable
+
+Confirm on_ready() logs and scheduler task starts
+
+
+
+
+→ PHASE_0_COMPLETE
+
+
+---
+
+PHASE 1 — COMMAND AND COG SYSTEM REPAIR
+
+TASK 1 — FIX ALL .command() SYNTAX ISSUES
+
+Replace outdated @bot.command() usages with @bot.slash_command()
+
+Ensure command methods are declared as async def and use ctx properly
+
+Apply changes in the following cogs:
+
+economy.py
+
+linking.py
+
+bounties.py
+
+factions.py
+
+premium.py
+
+
+
+Validation Criteria:
+
+Each command is recognized by Pycord
+
+No runtime errors on bot startup
+
+Slash command metadata (names, descriptions) are provided where required
+
+
+
+---
+
+TASK 2 — CONFIRM ALL 8 COGS LOAD SUCCESSFULLY
+
+Target Cog Files:
+
+1. core.py
+
+
+2. economy.py
+
+
+3. linking.py
+
+
+4. bounties.py
+
+
+5. factions.py
+
+
+6. premium.py
+
+
+7. parsers.py
+
+
+8. admin.py
+
+
+
+Expected Behavior:
+
+Each cog’s setup() runs without error
+
+Startup logs clearly indicate which cogs loaded
+
+Any command definitions or event hooks inside each cog are registered and callable
+
+
+
+---
+
+TASK 3 — CONFIRM DISCORD COMMAND REGISTRATION
+
+All commands must appear in Discord's command UI after boot
+
+Commands must be accessible from any test guild (or global scope)
+
+Use await bot.sync_commands() as needed
+
+Use bot.tree.get_commands() or equivalent to validate actual command presence
+
+
+Validation Tests:
+
+Slash commands render correctly in Discord
+
+Commands execute without error and produce expected response
+
+No 400/401/403/500 Discord API errors returned on invoke
+
+
+
+---
+
+EXECUTION DISCIPLINE
+
+Do not commit, checkpoint, or report until all tasks are complete
+
+This is a single-task batch repair
+
+All validation must be real — no assumptions
+
+A task is only done when all commands work live and all cogs function properly
+
