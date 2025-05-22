@@ -425,14 +425,35 @@ class Premium(commands.Cog):
     
     @server.command(name="remove", description="Remove a game server from this guild")
     @commands.has_permissions(administrator=True)
-    async def server_remove(self, ctx: discord.ApplicationContext, serverid: str):
+    async def get_server_names(self, ctx: discord.AutocompleteContext):
+        """Get server names for autocomplete"""
+        try:
+            guild_id = ctx.interaction.guild.id
+            guild_config = await self.bot.db_manager.get_guild(guild_id)
+            
+            if not guild_config:
+                return []
+            
+            servers = guild_config.get('servers', [])
+            server_names = [server.get('server_name', '') for server in servers if server.get('server_name')]
+            
+            # Filter based on current input
+            current_input = ctx.value.lower()
+            matching_names = [name for name in server_names if current_input in name.lower()]
+            
+            return matching_names[:25]  # Discord limits to 25 options
+        except Exception:
+            return []
+
+    async def server_remove(self, ctx: discord.ApplicationContext, 
+                           server_name: discord.Option(str, description="Server name to remove", autocomplete=get_server_names)):
         """Remove a game server from the guild"""
         try:
             guild_id = ctx.guild.id
-            serverid = serverid.strip()
+            server_name = server_name.strip()
             
-            if not serverid:
-                await ctx.respond("❌ Server ID cannot be empty!", ephemeral=True)
+            if not server_name:
+                await ctx.respond("❌ Server name cannot be empty!", ephemeral=True)
                 return
             
             # Get guild configuration
@@ -441,38 +462,43 @@ class Premium(commands.Cog):
                 await ctx.respond("❌ No servers configured for this guild!", ephemeral=True)
                 return
             
-            # Find the server to remove
+            # Find the server to remove by name
             servers = guild_config.get('servers', [])
             server_to_remove = None
             updated_servers = []
             
             for server in servers:
-                if server.get('server_id') == serverid:
+                if server.get('server_name') == server_name:
                     server_to_remove = server
                 else:
                     updated_servers.append(server)
             
             if not server_to_remove:
-                await ctx.respond(f"❌ Server **{serverid}** not found!", ephemeral=True)
+                await ctx.respond(f"❌ Server **{server_name}** not found!", ephemeral=True)
                 return
             
-            # Update guild with remaining servers
-            success = await self.bot.db_manager.update_guild_servers(guild_id, updated_servers)
+            # Update guild configuration with remaining servers
+            result = await self.bot.db_manager.guilds.update_one(
+                {"guild_id": guild_id},
+                {"$set": {"servers": updated_servers}}
+            )
             
-            if success:
+            if result.modified_count > 0:
                 # Also clear all PvP data for this server
-                await self.bot.db_manager.clear_server_pvp_data(guild_id, serverid)
+                server_id = server_to_remove.get('server_id')
+                if server_id:
+                    await self.bot.db_manager.clear_server_pvp_data(guild_id, server_id)
                 
                 embed = discord.Embed(
                     title="🗑️ Server Removed",
-                    description=f"Game server **{server_to_remove.get('server_name', serverid)}** has been removed!",
+                    description=f"Game server **{server_name}** has been removed!",
                     color=0xFF6B6B,
                     timestamp=datetime.now(timezone.utc)
                 )
                 
                 embed.add_field(
-                    name="🆔 Removed Server ID",
-                    value=serverid,
+                    name="🆔 Server ID",
+                    value=server_to_remove.get('server_id', 'N/A'),
                     inline=True
                 )
                 
