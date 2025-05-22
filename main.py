@@ -107,6 +107,7 @@ class EmeraldKillfeedBot(commands.Bot):
         try:
             # Load cogs in order
             cogs = [
+                'bot.cogs.core',
                 'bot.cogs.economy',
                 'bot.cogs.gambling', 
                 'bot.cogs.linking',
@@ -218,6 +219,34 @@ class EmeraldKillfeedBot(commands.Bot):
             logger.info("🔧 Starting cog loading process...")
             cogs_success = await self.load_cogs()
             logger.info(f"🎯 Cog loading: {'✅ Complete' if cogs_success else '❌ Failed'}")
+            
+            # Global sync for multi-guild bot in production mode
+            if cogs_success and not self.dev_mode:
+                logger.info("🔄 Performing global sync for multi-guild bot...")
+                try:
+                    # Global sync - works across all guilds
+                    synced = await self.sync_commands()
+                    if synced is not None:
+                        logger.info(f"✅ Successfully synced {len(synced)} commands globally!")
+                        logger.info("🌐 Commands are now available across all guilds")
+                    else:
+                        # Force global sync if first attempt returns None
+                        logger.info("🔄 Attempting force global sync...")
+                        synced = await self.sync_commands(force=True)
+                        if synced is not None:
+                            logger.info(f"✅ Force sync successful: {len(synced)} commands globally!")
+                        else:
+                            logger.warning("⚠️ Sync completed but returned no data - commands should still register")
+                            
+                except Exception as e:
+                    logger.error(f"❌ Global sync failed: {e}")
+                    logger.info("💡 Commands may still auto-register, check Discord in 1-2 minutes")
+                
+                for guild in self.guilds:
+                    logger.info(f"📡 Bot connected to: {guild.name} (ID: {guild.id})")
+                    
+            else:
+                logger.info("🧪 Dev mode: Commands registered locally only")
             
             # Bot ready messages
             if self.user:
